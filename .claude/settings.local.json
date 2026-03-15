@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo view rraheja/ai-pm-tools --json description,name,readme,repositoryTopics,url)",
+      "Bash(gh repo view rraheja/ai-pm-tools --json description,url)",
+      "Bash(gh api repos/rraheja/ai-pm-tools/contents --jq '.[].name')",
+      "Bash(gh api repos/rraheja/ai-pm-tools/contents/skills --jq '.[].name')",
+      "Bash(gh api repos/rraheja/ai-pm-tools/contents/.claude-plugin --jq '.[].name')",
+      "Bash(gh api repos/rraheja/ai-pm-tools/contents/.claude-plugin/plugin.json | jq -r '.content' | base64 -d)",
+      "WebSearch"
+    ]
+  }
+}
