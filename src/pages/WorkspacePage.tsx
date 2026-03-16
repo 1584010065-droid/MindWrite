@@ -69,16 +69,20 @@ export default function WorkspacePage() {
 
     setError(null);
     setLoading(true);
+    console.log("🚀 [WorkspacePage] 开始生成文章段落，模式:", mode);
+    console.log("📋 [WorkspacePage] 目标节点数:", targetIds.length, "节点IDs:", targetIds);
     try {
       const blocksToReplace = article.blocks.filter(
         (block) => targetIds.includes(block.nodeId) && !block.isLocked
       );
       const hasUserEdited = blocksToReplace.some((block) => block.isUserEdited);
+      console.log("🔍 [WorkspacePage] 待替换段落数:", blocksToReplace.length, "包含用户编辑:", hasUserEdited);
       if (hasUserEdited) {
         const confirmed = window.confirm(
           "有段落已被你修改过，继续生成将覆盖这些内容。确认继续吗？"
         );
         if (!confirmed) {
+          console.log("⏹️ [WorkspacePage] 用户取消了生成");
           setLoading(false);
           return;
         }
@@ -86,6 +90,7 @@ export default function WorkspacePage() {
       const nodeTexts = map.nodes
         .filter((node) => targetIds.includes(node.id))
         .map((node) => ({ nodeId: node.id, text: node.text }));
+      console.log("📝 [WorkspacePage] 准备生成的节点内容:", nodeTexts.map(n => n.text).join(", "));
 
       const generated = await generateBlocksForNodes({
         nodeTexts,
@@ -95,11 +100,15 @@ export default function WorkspacePage() {
         tavilyApiKey,
         enableWebSearch: profile.enableWebSearch,
       });
+      console.log("✅ [WorkspacePage] 段落生成成功，生成数量:", generated.length);
       upsertBlocks(generated);
+      console.log("💾 [WorkspacePage] 段落已更新到文章存储");
     } catch (err) {
+      console.error("❌ [WorkspacePage] 生成失败:", err);
       setError("生成失败，请稍后重试。");
     } finally {
       setLoading(false);
+      console.log("🏁 [WorkspacePage] 生成流程结束");
     }
   };
 

@@ -36,6 +36,8 @@ export default function GeneratePage() {
     }
     setError(null);
     setLoading(true);
+    console.log("🚀 [GeneratePage] 开始生成思维导图，主题:", text);
+    console.log("📋 [GeneratePage] 配置信息 - 模型:", profile.modelSelection, "网络搜索:", profile.enableWebSearch ? "开启" : "关闭");
     try {
       const map = await generateMindMapFromSentence({
         sentence: text,
@@ -44,12 +46,15 @@ export default function GeneratePage() {
         tavilyApiKey,
         enableWebSearch: profile.enableWebSearch,
       });
+      console.log("✅ [GeneratePage] 思维导图生成成功，节点数:", map.nodes.length);
       setMap(map);
       setTimeout(() => navigate("/workspace"), 600);
     } catch (err) {
+      console.error("❌ [GeneratePage] 生成失败:", err);
       setError("生成失败，请稍后重试");
     } finally {
       setLoading(false);
+      console.log("🏁 [GeneratePage] 生成流程结束");
     }
   };
 

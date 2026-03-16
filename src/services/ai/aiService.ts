@@ -80,10 +80,14 @@ export async function generateMindMapFromSentence(
 ): Promise<MindMap> {
   const { sentence, apiKey, model, tavilyApiKey, enableWebSearch } = options;
 
+  console.log("🤖 [aiService] 开始生成思维导图，主题:", sentence);
+  console.log("⚙️ [aiService] 使用模型:", model, "网络搜索:", enableWebSearch ? "开启" : "关闭");
+
   const client = getClient(apiKey);
 
   let searchContext = "";
   if (enableWebSearch && tavilyApiKey) {
+    console.log("🔍 [aiService] 开始网络搜索...");
     try {
       const searchResult = await tavilySearch(sentence, tavilyApiKey, {
         maxResults: 5,
@@ -91,8 +95,9 @@ export async function generateMindMapFromSentence(
         includeAnswer: true,
       });
       searchContext = formatSearchResultsForPrompt(searchResult);
+      console.log("✅ [aiService] 网络搜索完成，获取到搜索资料");
     } catch (error) {
-      console.warn("Tavily search failed, continuing without search context:", error);
+      console.warn("⚠️ [aiService] Tavily 搜索失败，继续无搜索上下文生成:", error);
     }
   }
 
@@ -117,14 +122,19 @@ ${searchContext}
 - 所有字段必须用双引号
 - 不要包含任何额外解释文字`;
 
+  console.log("📤 [aiService] 发送 AI 请求生成思维导图...");
   const response = await client.responses.create({
     model,
     input: prompt,
   });
+  console.log("📥 [aiService] 收到 AI 响应");
 
   const text = extractTextFromResponse(response);
+  console.log("📝 [aiService] 提取响应文本长度:", text.length);
   const json = safeJsonParse(text) as TreeNode;
-  return treeToMindMap(json);
+  const mindMap = treeToMindMap(json);
+  console.log("✅ [aiService] 思维导图解析成功，节点数:", mindMap.nodes.length);
+  return mindMap;
 }
 
 export type GenerateBlocksOptions = {
@@ -141,10 +151,14 @@ export async function generateBlocksForNodes(
 ): Promise<ArticleBlock[]> {
   const { nodeTexts, apiKey, model, writingPreference, tavilyApiKey, enableWebSearch } = options;
 
+  console.log("🤖 [aiService] 开始生成文章段落，节点数:", nodeTexts.length);
+  console.log("⚙️ [aiService] 使用模型:", model, "写作偏好:", writingPreference || "默认");
+
   const client = getClient(apiKey);
 
   let searchContext = "";
   if (enableWebSearch && tavilyApiKey && nodeTexts.length > 0) {
+    console.log("🔍 [aiService] 开始网络搜索，查询数:", Math.min(nodeTexts.length, 3));
     try {
       const queries = nodeTexts.map((n) => n.text).slice(0, 3);
       const searchPromises = queries.map((query) =>
@@ -158,8 +172,9 @@ export async function generateBlocksForNodes(
       searchContext = searchResults
         .map((result, index) => `【${queries[index]}】\n${formatSearchResultsForPrompt(result)}`)
         .join("\n\n");
+      console.log("✅ [aiService] 网络搜索完成，获取到", searchResults.length, "个搜索结果");
     } catch (error) {
-      console.warn("Tavily search failed, continuing without search context:", error);
+      console.warn("⚠️ [aiService] Tavily 搜索失败，继续无搜索上下文生成:", error);
     }
   }
 
@@ -191,19 +206,25 @@ ${nodeTexts.map((node) => `- ${node.nodeId}: ${node.text}`).join("\n")}
 - html 字段必须是可直接渲染的段落 HTML
 - 不要包含多余解释或 Markdown 代码块`;
 
+  console.log("📤 [aiService] 发送 AI 请求生成文章段落...");
   const response = await client.responses.create({
     model,
     input: prompt,
   });
+  console.log("📥 [aiService] 收到 AI 响应");
 
   const text = extractTextFromResponse(response);
+  console.log("📝 [aiService] 提取响应文本长度:", text.length);
   const json = safeJsonParse(text) as { blocks: { nodeId: string; html: string }[] };
+  console.log("✅ [aiService] 解析到", json.blocks?.length || 0, "个段落块");
 
-  return json.blocks.map((block) => ({
+  const blocks = json.blocks.map((block) => ({
     id: createId("block"),
     nodeId: block.nodeId,
     contentHtml: block.html,
     isLocked: false,
     isUserEdited: false,
   }));
+  console.log("✅ [aiService] 段落生成完成，返回", blocks.length, "个段落");
+  return blocks;
 }
