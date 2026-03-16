@@ -10,6 +10,7 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     onEditStart,
     onEditCommit,
     onAddChild,
+    onHover,
   } = data as {
     label: string;
     isSelected: boolean;
@@ -18,6 +19,7 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     onEditStart: (id: string) => void;
     onEditCommit: (id: string, text: string) => void;
     onAddChild: (id: string) => void;
+    onHover: (id: string | null) => void;
   };
 
   const [value, setValue] = useState(label);
@@ -41,6 +43,8 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
         event.stopPropagation();
         onEditStart(id);
       }}
+      onMouseEnter={() => onHover(id)}
+      onMouseLeave={() => onHover(null)}
     >
       {isEditing ? (
         <input

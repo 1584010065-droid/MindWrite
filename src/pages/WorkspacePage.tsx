@@ -11,9 +11,11 @@ import { getDFSOrder } from "../utils/mindmap";
 export default function WorkspacePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showArticle, setShowArticle] = useState(true);
 
   const map = useMindMapStore((state) => state.map);
   const selectedNodeIds = useMindMapStore((state) => state.selectedNodeIds);
+  const hoveredNodeId = useMindMapStore((state) => state.hoveredNodeId);
   const loadMindMap = useMindMapStore((state) => state.loadFromStorage);
 
   const article = useArticleStore((state) => state.article);
@@ -48,6 +50,7 @@ export default function WorkspacePage() {
   }, [article.blocks, map]);
 
   const apiKey = profile.apiKey || import.meta.env.VITE_ARK_API_KEY;
+  const tavilyApiKey = profile.tavilyApiKey || import.meta.env.VITE_TAVILY_API_KEY;
 
   const handleGenerate = async (mode: "selected" | "all") => {
     if (!apiKey) {
@@ -84,12 +87,14 @@ export default function WorkspacePage() {
         .filter((node) => targetIds.includes(node.id))
         .map((node) => ({ nodeId: node.id, text: node.text }));
 
-      const generated = await generateBlocksForNodes(
+      const generated = await generateBlocksForNodes({
         nodeTexts,
         apiKey,
-        profile.modelSelection,
-        profile.writingPreference
-      );
+        model: profile.modelSelection,
+        writingPreference: profile.writingPreference,
+        tavilyApiKey,
+        enableWebSearch: profile.enableWebSearch,
+      });
       upsertBlocks(generated);
     } catch (err) {
       setError("生成失败，请稍后重试。");
@@ -101,111 +106,135 @@ export default function WorkspacePage() {
   const selectedCount = selectedNodeIds.filter((id) => id !== map.rootId).length;
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[1.05fr_1fr] animate-fadeIn">
-      {/* 思维导图区域 */}
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-ui uppercase tracking-[0.2em] text-dusk/70">
-              MindMap
-            </p>
-            <h2 className="font-display text-2xl text-ink">思维导图</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="group rounded-full border border-line/60 bg-paper/60 px-4 py-2 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5 hover:text-ink disabled:opacity-50"
-              onClick={() => handleGenerate("selected")}
-              disabled={loading || selectedCount === 0}
-            >
-              <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 3v18" />
-                  <path d="M3 12h18" />
-                </svg>
-                生成选中段落
-              </span>
-            </button>
-            <button
-              className="group rounded-full bg-clay px-4 py-2 text-xs font-ui text-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-clay-light hover:shadow-lift disabled:opacity-60"
-              onClick={() => handleGenerate("all")}
-              disabled={loading}
-            >
-              <span className="flex items-center gap-1.5">
-                {loading ? (
-                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 3v18" />
-                    <path d="M3 12h18" />
-                  </svg>
-                )}
-                {loading ? "生成中..." : "生成全文"}
-              </span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="animate-fadeIn h-[calc(100vh-80px)] flex flex-col">
+      {/* 工具栏 - 紧凑设计 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <StatusBadge label={`节点 ${map.nodes.length}`} />
           <StatusBadge
             label={`已选 ${selectedCount}`}
             tone={selectedCount > 0 ? "accent" : "neutral"}
           />
           <StatusBadge label={`段落 ${article.blocks.length}`} />
-          <span className="text-xs font-ui text-dusk/60">
-            提示：按住 Shift 可多选节点
-          </span>
         </div>
-        
-        {error && (
-          <div className="rounded-2xl border border-red-200/60 bg-red-50/80 px-4 py-3 text-sm text-red-700 animate-floatIn">
-            {error}
-          </div>
-        )}
-        
-        <MindMapEditor />
-      </section>
-
-      {/* 文章区域 */}
-      <section className="space-y-4">
-        <div>
-          <p className="text-xs font-ui uppercase tracking-[0.2em] text-dusk/70">
-            Article
-          </p>
-          <h2 className="font-display text-2xl text-ink">文章实时对照</h2>
-        </div>
-        
-        <input
-          className="w-full rounded-2xl border border-line/60 bg-white/70 px-4 py-3 text-lg font-display text-ink shadow-inner transition-all duration-250 ease-out-expo placeholder:text-dusk/50 placeholder:font-body focus:border-clay focus:bg-white focus:shadow-glow"
-          value={article.title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="文章标题"
-        />
-        
-        <div className="space-y-4">
-          {orderedBlocks.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-line/60 bg-paper/40 px-6 py-12 text-center">
-              <svg className="mx-auto h-12 w-12 text-dusk/30 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <div className="flex items-center gap-2">
+          {/* 视图切换按钮 - 小屏幕显示 */}
+          <button
+            className="xl:hidden rounded-full border border-line/60 bg-paper/60 px-3 py-1.5 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5"
+            onClick={() => setShowArticle(!showArticle)}
+          >
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {showArticle ? (
+                  <><path d="M3 3h18v18H3z" /><path d="M3 9h18" /></>
+                ) : (
+                  <><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></>
+                )}
               </svg>
-              <p className="text-dusk/60">生成后文章内容会在这里出现</p>
-            </div>
-          )}
-          {orderedBlocks.map((block, index) => (
-            <div key={block!.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-floatIn">
-              <ArticleBlockEditor
-                block={block!}
-                onUpdate={updateBlockContent}
-                onToggleLock={toggleBlockLock}
-                highlight={selectedNodeIds.includes(block!.nodeId)}
-              />
-            </div>
-          ))}
+              {showArticle ? "显示导图" : "显示文章"}
+            </span>
+          </button>
+          
+          <button
+            className="rounded-full border border-line/60 bg-paper/60 px-3 py-1.5 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5 hover:text-ink disabled:opacity-50"
+            onClick={() => handleGenerate("selected")}
+            disabled={loading || selectedCount === 0}
+          >
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3v18" />
+                <path d="M3 12h18" />
+              </svg>
+              选中
+            </span>
+          </button>
+          <button
+            className="rounded-full bg-clay px-3 py-1.5 text-xs font-ui text-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-clay-light hover:shadow-lift disabled:opacity-60"
+            onClick={() => handleGenerate("all")}
+            disabled={loading}
+          >
+            <span className="flex items-center gap-1.5">
+              {loading ? (
+                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v18" />
+                  <path d="M3 12h18" />
+                </svg>
+              )}
+              {loading ? "生成中..." : "全文"}
+            </span>
+          </button>
         </div>
-      </section>
+      </div>
+      
+      {error && (
+        <div className="rounded-xl border border-red-200/60 bg-red-50/80 px-3 py-2 text-sm text-red-700 animate-floatIn mb-3 flex-shrink-0">
+          {error}
+        </div>
+      )}
+
+      {/* 主内容区 - 响应式布局，充分利用空间 */}
+      <div className="grid gap-4 xl:grid-cols-[1fr_450px] 2xl:grid-cols-[1fr_500px] flex-1 min-h-0">
+        {/* 思维导图区域 */}
+        <section className={`flex flex-col min-h-0 ${!showArticle ? 'flex' : 'hidden xl:flex'}`}>
+          <div className="flex items-center justify-between mb-2 flex-shrink-0">
+            <div>
+              <p className="text-[10px] font-ui uppercase tracking-[0.15em] text-dusk/60">
+                MindMap
+              </p>
+              <h2 className="font-display text-lg text-ink">思维导图</h2>
+            </div>
+            <span className="text-[10px] font-ui text-dusk/50">
+              Shift+点击多选
+            </span>
+          </div>
+          <div className="flex-1 min-h-0">
+            <MindMapEditor />
+          </div>
+        </section>
+
+        {/* 文章区域 */}
+        <section className={`flex flex-col min-h-0 ${showArticle ? 'flex' : 'hidden xl:flex'}`}>
+          <div className="mb-2 flex-shrink-0">
+            <p className="text-[10px] font-ui uppercase tracking-[0.15em] text-dusk/60">
+              Article
+            </p>
+            <h2 className="font-display text-lg text-ink">文章实时对照</h2>
+          </div>
+          
+          <input
+            className="w-full rounded-xl border border-line/60 bg-white/70 px-3 py-2 text-base font-display text-ink shadow-inner transition-all duration-250 ease-out-expo placeholder:text-dusk/50 placeholder:font-body focus:border-clay focus:bg-white focus:shadow-glow mb-3 flex-shrink-0"
+            value={article.title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="文章标题"
+          />
+          
+          <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+            {orderedBlocks.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-line/60 bg-paper/40 px-4 py-10 text-center">
+                <svg className="mx-auto h-10 w-10 text-dusk/30 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-sm text-dusk/60">生成后文章内容会在这里出现</p>
+              </div>
+            )}
+            {orderedBlocks.map((block, index) => (
+              <div key={block!.id} style={{ animationDelay: `${index * 30}ms` }} className="animate-floatIn">
+                <ArticleBlockEditor
+                  block={block!}
+                  onUpdate={updateBlockContent}
+                  onToggleLock={toggleBlockLock}
+                  isHovered={hoveredNodeId === block!.nodeId}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

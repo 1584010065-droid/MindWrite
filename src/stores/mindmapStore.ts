@@ -20,10 +20,12 @@ type MindMapState = {
   map: MindMap;
   selectedNodeIds: string[];
   editingNodeId: string | null;
+  hoveredNodeId: string | null;
   setMap: (map: MindMap) => void;
   selectNode: (id: string) => void;
   toggleNodeSelection: (id: string) => void;
   setEditingNodeId: (id: string | null) => void;
+  setHoveredNodeId: (id: string | null) => void;
   updateNodeText: (id: string, text: string) => void;
   addChildNode: (parentId: string) => void;
   loadFromStorage: () => Promise<void>;
@@ -37,6 +39,7 @@ export const useMindMapStore = create<MindMapState>((set, get) => ({
   map: defaultMindMap,
   selectedNodeIds: [],
   editingNodeId: null,
+  hoveredNodeId: null,
   setMap: (map) => {
     set({ map, selectedNodeIds: [map.rootId] });
     void saveMindMap(map);
@@ -51,6 +54,7 @@ export const useMindMapStore = create<MindMapState>((set, get) => ({
     }
   },
   setEditingNodeId: (id) => set({ editingNodeId: id }),
+  setHoveredNodeId: (id) => set({ hoveredNodeId: id }),
   updateNodeText: (id, text) => {
     const map = get().map;
     const nodes = map.nodes.map((node) => (node.id === id ? { ...node, text } : node));

@@ -49,6 +49,7 @@ export default function MindMapEditor() {
   const updateNodeText = useMindMapStore((state) => state.updateNodeText);
   const setEditingNodeId = useMindMapStore((state) => state.setEditingNodeId);
   const addChildNode = useMindMapStore((state) => state.addChildNode);
+  const setHoveredNodeId = useMindMapStore((state) => state.setHoveredNodeId);
 
   const layout = useMemo(() => buildLayout(map), [map]);
   const nodes = layout.map((pos) => {
@@ -74,6 +75,7 @@ export default function MindMapEditor() {
           setEditingNodeId(null);
         },
         onAddChild: addChildNode,
+        onHover: setHoveredNodeId,
       },
     };
   });
@@ -88,7 +90,7 @@ export default function MindMapEditor() {
     }));
 
   return (
-    <div className="h-[560px] rounded-3xl border border-line/70 bg-white/60 shadow-soft">
+    <div className="h-full rounded-2xl border border-line/60 bg-white/60 shadow-soft">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -97,7 +99,7 @@ export default function MindMapEditor() {
         proOptions={{ hideAttribution: true }}
         onPaneClick={() => selectNode(map.rootId)}
       >
-        <Background color="rgba(43, 30, 22, 0.15)" gap={22} />
+        <Background color="rgba(43, 30, 22, 0.12)" gap={20} />
         <Controls />
       </ReactFlow>
     </div>

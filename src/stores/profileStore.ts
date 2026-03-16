@@ -9,6 +9,8 @@ const defaultProfile: UserProfile = {
   exportPreset: "a4",
   modelSelection: "doubao-seed-1-8-251228",
   apiKey: "",
+  tavilyApiKey: "",
+  enableWebSearch: true,
 };
 
 type ProfileState = {

@@ -5,4 +5,6 @@ export type UserProfile = {
   exportPreset: "a4" | "letter";
   modelSelection: string;
   apiKey: string;
+  tavilyApiKey: string;
+  enableWebSearch: boolean;
 };
