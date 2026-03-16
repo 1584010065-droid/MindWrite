@@ -29,9 +29,14 @@ export default function GeneratePage() {
   const tavilyApiKey = profile.tavilyApiKey || import.meta.env.VITE_TAVILY_API_KEY;
 
   const handleGenerate = async (text: string) => {
+    if (loading) return;
     if (!text.trim()) return;
     if (!apiKey) {
       setError("请先在设置页面填写 API Key");
+      return;
+    }
+    if (!profile.modelSelection) {
+      setError("请先在设置页面选择模型");
       return;
     }
     setError(null);
@@ -51,7 +56,10 @@ export default function GeneratePage() {
       setTimeout(() => navigate("/workspace"), 600);
     } catch (err) {
       console.error("❌ [GeneratePage] 生成失败:", err);
-      setError("生成失败，请稍后重试");
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "生成失败，请稍后重试";
+      setError(errorMessage);
     } finally {
       setLoading(false);
       console.log("🏁 [GeneratePage] 生成流程结束");
@@ -86,7 +94,7 @@ export default function GeneratePage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 handleGenerate(input);
               }
@@ -123,10 +131,7 @@ export default function GeneratePage() {
           <button
             key={item}
             className="px-3 py-1.5 text-xs text-dusk/70 bg-paper/60 border border-line/40 rounded-full transition-all duration-250 ease-out-expo hover:border-clay/50 hover:text-ink hover:bg-white"
-            onClick={() => {
-              setInput(item);
-              handleGenerate(item);
-            }}
+            onClick={() => setInput(item)}
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {item}

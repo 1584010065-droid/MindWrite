@@ -5,6 +5,7 @@ import { createId } from "../../utils/id";
 import { tavilySearch, formatSearchResultsForPrompt } from "../search/tavilyService";
 
 const BASE_URL = "https://ark.cn-beijing.volces.com/api/v3";
+const REQUEST_TIMEOUT = 60000;
 
 type TreeNode = {
   text: string;
@@ -16,16 +17,8 @@ function getClient(apiKey: string) {
     apiKey,
     baseURL: BASE_URL,
     dangerouslyAllowBrowser: true,
+    timeout: REQUEST_TIMEOUT,
   });
-}
-
-function extractTextFromResponse(response: any) {
-  if (typeof response?.output_text === "string") return response.output_text;
-  const output = response?.output?.[0]?.content?.[0]?.text;
-  if (typeof output === "string") return output;
-  const content = response?.choices?.[0]?.message?.content;
-  if (typeof content === "string") return content;
-  return "";
 }
 
 function safeJsonParse(text: string) {
@@ -123,13 +116,13 @@ ${searchContext}
 - 不要包含任何额外解释文字`;
 
   console.log("📤 [aiService] 发送 AI 请求生成思维导图...");
-  const response = await client.responses.create({
+  const response = await client.chat.completions.create({
     model,
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
   });
   console.log("📥 [aiService] 收到 AI 响应");
 
-  const text = extractTextFromResponse(response);
+  const text = response.choices[0]?.message?.content || "";
   console.log("📝 [aiService] 提取响应文本长度:", text.length);
   const json = safeJsonParse(text) as TreeNode;
   const mindMap = treeToMindMap(json);
@@ -207,13 +200,13 @@ ${nodeTexts.map((node) => `- ${node.nodeId}: ${node.text}`).join("\n")}
 - 不要包含多余解释或 Markdown 代码块`;
 
   console.log("📤 [aiService] 发送 AI 请求生成文章段落...");
-  const response = await client.responses.create({
+  const response = await client.chat.completions.create({
     model,
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
   });
   console.log("📥 [aiService] 收到 AI 响应");
 
-  const text = extractTextFromResponse(response);
+  const text = response.choices[0]?.message?.content || "";
   console.log("📝 [aiService] 提取响应文本长度:", text.length);
   const json = safeJsonParse(text) as { blocks: { nodeId: string; html: string }[] };
   console.log("✅ [aiService] 解析到", json.blocks?.length || 0, "个段落块");
