@@ -6,48 +6,123 @@
 
 :root {
   color-scheme: light;
-  --paper: #f8f2e8;
-  --ink: #2b1e16;
-  --clay: #b36a3d;
-  --sun: #e6b06a;
-  --sage: #97a284;
-  --dusk: #6c584c;
-  --blush: #e7c2b3;
-  --line: rgba(43, 30, 22, 0.12);
+  /* 优化后的配色 - 保留温暖感但提升对比度 */
+  --paper: #faf6f0;
+  --paper-dark: #f5efe6;
+  --ink: #1a1410;
+  --ink-light: #3d3229;
+  --clay: #a65d35;
+  --clay-light: #c47a52;
+  --sun: #d4a056;
+  --sage: #7a8b6e;
+  --dusk: #5a4a3e;
+  --blush: #e8d5c4;
+  --line: rgba(26, 20, 16, 0.1);
+  --line-strong: rgba(26, 20, 16, 0.2);
+  
+  /* 动画时间变量 */
+  --transition-fast: 150ms;
+  --transition-base: 250ms;
+  --transition-slow: 400ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: "Source Serif 4", serif;
+  font-family: "Source Serif 4", Georgia, serif;
   background-color: var(--paper);
   color: var(--ink);
   min-height: 100vh;
-  background-image: var(--bg-warmglow, none);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
 }
 
+/* 优化文字选择效果 */
 ::selection {
-  background: rgba(179, 106, 61, 0.3);
+  background: rgba(166, 93, 53, 0.25);
+  color: var(--ink);
 }
 
+/* 链接样式 */
 a {
   color: inherit;
   text-decoration: none;
+  transition: color var(--transition-fast) var(--ease-out);
 }
 
+a:hover {
+  color: var(--clay);
+}
+
+/* 按钮基础样式 */
 button {
-  font-family: "Source Sans 3", sans-serif;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  cursor: pointer;
+  transition: all var(--transition-base) var(--ease-out);
 }
 
+button:focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+}
+
+/* 表单元素 */
 input,
 textarea,
 select {
-  font-family: "Source Sans 3", sans-serif;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  transition: all var(--transition-fast) var(--ease-out);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--clay);
+  box-shadow: 0 0 0 3px rgba(166, 93, 53, 0.15);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dusk);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--clay);
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

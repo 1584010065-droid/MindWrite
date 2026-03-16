@@ -28,10 +28,10 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
 
   return (
     <div
-      className={`min-w-[180px] rounded-2xl border px-4 py-3 shadow-soft transition ${
+      className={`min-w-[180px] rounded-xl border px-4 py-3 shadow-soft transition-all duration-250 ease-out-expo ${
         isSelected
-          ? "border-clay bg-white text-ink"
-          : "border-line/70 bg-paper/80 text-dusk"
+          ? "border-clay bg-white shadow-glow"
+          : "border-line/60 bg-paper/80 hover:border-line-strong hover:bg-white/90"
       }`}
       onClick={(event) => {
         event.stopPropagation();
@@ -44,7 +44,7 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     >
       {isEditing ? (
         <input
-          className="w-full border-b border-line/60 bg-transparent text-sm font-ui text-ink focus:outline-none"
+          className="w-full border-b border-clay/60 bg-transparent text-sm font-ui text-ink focus:outline-none focus:border-clay"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onBlur={() => onEditCommit(id, value)}
@@ -56,16 +56,21 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
           autoFocus
         />
       ) : (
-        <p className="text-sm font-ui text-ink">{label}</p>
+        <p className="text-sm font-ui text-ink leading-relaxed">{label}</p>
       )}
       <button
-        className="mt-2 rounded-full border border-line/60 px-3 py-1 text-[11px] font-ui text-dusk hover:border-clay"
+        className="mt-2 rounded-full border border-line/50 bg-paper/60 px-3 py-1 text-[11px] font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:text-clay hover:bg-clay/5"
         onClick={(event) => {
           event.stopPropagation();
           onAddChild(id);
         }}
       >
-        + 子节点
+        <span className="flex items-center gap-1">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          子节点
+        </span>
       </button>
     </div>
   );

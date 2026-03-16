@@ -101,32 +101,53 @@ export default function WorkspacePage() {
   const selectedCount = selectedNodeIds.filter((id) => id !== map.rootId).length;
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[1.05fr_1fr]">
+    <div className="grid gap-8 xl:grid-cols-[1.05fr_1fr] animate-fadeIn">
+      {/* 思维导图区域 */}
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-ui uppercase tracking-[0.2em] text-dusk/70">
+            <p className="text-xs font-ui uppercase tracking-[0.2em] text-dusk/70">
               MindMap
             </p>
             <h2 className="font-display text-2xl text-ink">思维导图</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              className="rounded-full border border-line/70 bg-white/70 px-4 py-2 text-xs font-ui text-dusk hover:border-clay"
+              className="group rounded-full border border-line/60 bg-paper/60 px-4 py-2 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5 hover:text-ink disabled:opacity-50"
               onClick={() => handleGenerate("selected")}
-              disabled={loading}
+              disabled={loading || selectedCount === 0}
             >
-              生成选中段落
+              <span className="flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v18" />
+                  <path d="M3 12h18" />
+                </svg>
+                生成选中段落
+              </span>
             </button>
             <button
-              className="rounded-full bg-clay px-4 py-2 text-xs font-ui text-paper shadow-soft"
+              className="group rounded-full bg-clay px-4 py-2 text-xs font-ui text-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-clay-light hover:shadow-lift disabled:opacity-60"
               onClick={() => handleGenerate("all")}
               disabled={loading}
             >
-              {loading ? "生成中..." : "生成全文"}
+              <span className="flex items-center gap-1.5">
+                {loading ? (
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 3v18" />
+                    <path d="M3 12h18" />
+                  </svg>
+                )}
+                {loading ? "生成中..." : "生成全文"}
+              </span>
             </button>
           </div>
         </div>
+        
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge label={`节点 ${map.nodes.length}`} />
           <StatusBadge
@@ -134,45 +155,54 @@ export default function WorkspacePage() {
             tone={selectedCount > 0 ? "accent" : "neutral"}
           />
           <StatusBadge label={`段落 ${article.blocks.length}`} />
-          <span className="text-xs font-ui text-dusk/70">
+          <span className="text-xs font-ui text-dusk/60">
             提示：按住 Shift 可多选节点
           </span>
         </div>
+        
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-2xl border border-red-200/60 bg-red-50/80 px-4 py-3 text-sm text-red-700 animate-floatIn">
             {error}
           </div>
         )}
+        
         <MindMapEditor />
       </section>
 
+      {/* 文章区域 */}
       <section className="space-y-4">
         <div>
-          <p className="text-sm font-ui uppercase tracking-[0.2em] text-dusk/70">
+          <p className="text-xs font-ui uppercase tracking-[0.2em] text-dusk/70">
             Article
           </p>
           <h2 className="font-display text-2xl text-ink">文章实时对照</h2>
         </div>
+        
         <input
-          className="w-full rounded-2xl border border-line/70 bg-white/70 px-4 py-3 text-base text-ink focus:border-clay focus:outline-none"
+          className="w-full rounded-2xl border border-line/60 bg-white/70 px-4 py-3 text-lg font-display text-ink shadow-inner transition-all duration-250 ease-out-expo placeholder:text-dusk/50 placeholder:font-body focus:border-clay focus:bg-white focus:shadow-glow"
           value={article.title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="文章标题"
         />
+        
         <div className="space-y-4">
           {orderedBlocks.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-line/70 bg-paper/60 px-6 py-8 text-center text-dusk/70">
-              生成后文章内容会在这里出现
+            <div className="rounded-3xl border border-dashed border-line/60 bg-paper/40 px-6 py-12 text-center">
+              <svg className="mx-auto h-12 w-12 text-dusk/30 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-dusk/60">生成后文章内容会在这里出现</p>
             </div>
           )}
-          {orderedBlocks.map((block) => (
-            <ArticleBlockEditor
-              key={block!.id}
-              block={block!}
-              onUpdate={updateBlockContent}
-              onToggleLock={toggleBlockLock}
-              highlight={selectedNodeIds.includes(block!.nodeId)}
-            />
+          {orderedBlocks.map((block, index) => (
+            <div key={block!.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-floatIn">
+              <ArticleBlockEditor
+                block={block!}
+                onUpdate={updateBlockContent}
+                onToggleLock={toggleBlockLock}
+                highlight={selectedNodeIds.includes(block!.nodeId)}
+              />
+            </div>
           ))}
         </div>
       </section>
