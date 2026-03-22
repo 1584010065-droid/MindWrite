@@ -3,7 +3,7 @@
  */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User, OAuthProvider, AuthResponse, TokenResponse } from '../types/auth';
+import type { User, OAuthProvider, AuthResponse, TokenResponse, AuthState } from '../types/auth';
 
 type AuthActions = {
   login: (email: string, password: string) => Promise<User>;
@@ -12,23 +12,29 @@ type AuthActions = {
   logout: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   fetchUser: () => Promise<void>;
-  updateUser: (user: Partial<User>) => void;
+  updateUser: (userData: Partial<User>) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   handleOAuthCallback: (accessToken: string, refreshToken: string) => Promise<void>;
 };
 
+type AuthStore = AuthState & AuthActions;
+
 const API_BASE = '/api';
 
-export const useAuthStore = create<AuthState & AuthActions>()(
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  accessToken: null,
+  refreshToken: null,
+};
+
+export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: true,
-      accessToken: null,
-      refreshToken: null,
+      ...initialState,
 
-      login: async (email, password) => {
+      login: async (email: string, password: string): Promise<User> => {
         const response = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -51,7 +57,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         return data.user;
       },
 
-      register: async (email, password, nickname) => {
+      register: async (email: string, password: string, nickname?: string): Promise<User> => {
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -74,11 +80,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         return data.user;
       },
 
-      loginWithOAuth: (provider) => {
+      loginWithOAuth: (provider: OAuthProvider): void => {
         window.location.href = `${API_BASE}/oauth/${provider}`;
       },
 
-      logout: async () => {
+      logout: async (): Promise<void> => {
         const { refreshToken } = get();
         try {
           await fetch(`${API_BASE}/auth/logout`, {
@@ -97,7 +103,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         });
       },
 
-      refreshTokens: async () => {
+      refreshTokens: async (): Promise<void> => {
         const { refreshToken } = get();
         if (!refreshToken) {
           throw new Error('No refresh token');
@@ -123,7 +129,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
       },
 
-      fetchUser: async () => {
+      fetchUser: async (): Promise<void> => {
         const { accessToken } = get();
         if (!accessToken) {
           set({ isLoading: false });
@@ -146,18 +152,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
       },
 
-      updateUser: (userData) => {
+      updateUser: (userData: Partial<User>): void => {
         const { user } = get();
         if (user) {
           set({ user: { ...user, ...userData } });
         }
       },
 
-      setTokens: (accessToken, refreshToken) => {
+      setTokens: (accessToken: string, refreshToken: string): void => {
         set({ accessToken, refreshToken });
       },
 
-      handleOAuthCallback: async (accessToken, refreshToken) => {
+      handleOAuthCallback: async (accessToken: string, refreshToken: string): Promise<void> => {
         set({ accessToken, refreshToken });
         await get().fetchUser();
       },
@@ -165,7 +171,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     {
       name: 'mindwrite-auth',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
+      partialize: (state: AuthStore) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
       }),
