@@ -3,11 +3,17 @@
  */
 import { Pool } from '@neondatabase/serverless';
 
-// 使用全局变量避免在开发模式下创建多个连接池
 const globalForDb = globalThis as unknown as { pool: Pool | undefined };
 
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set');
+}
+
 export const pool = globalForDb.pool ?? new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
+  ssl: true,
 });
 
 if (process.env.NODE_ENV !== 'production') {

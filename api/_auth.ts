@@ -5,9 +5,13 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { query } from './_db';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '15m';
 const REFRESH_TOKEN_EXPIRES_DAYS = 7;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not set');
+}
 
 export interface JwtPayload {
   userId: string;
@@ -18,7 +22,7 @@ export interface JwtPayload {
  */
 export async function signTokens(userId: string): Promise<{ accessToken: string; refreshToken: string }> {
   // 生成访问令牌
-  const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const accessToken = jwt.sign({ userId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
 
   // 生成刷新令牌（随机UUID）
   const refreshToken = crypto.randomUUID();
@@ -39,7 +43,7 @@ export async function signTokens(userId: string): Promise<{ accessToken: string;
  */
 export function verifyAccessToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return jwt.verify(token, JWT_SECRET!) as JwtPayload;
   } catch {
     return null;
   }
