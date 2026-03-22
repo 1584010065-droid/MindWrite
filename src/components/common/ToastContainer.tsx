@@ -1,7 +1,7 @@
 /**
  * Toast 消息组件
  */
-import { useToastStore } from '../stores/toastStore';
+import { useToastStore } from '../../stores/toastStore';
 
 const typeStyles = {
   info: 'bg-ink/90 text-paper',
