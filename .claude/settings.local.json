@@ -8,7 +8,14 @@
       "Bash(gh api repos/rraheja/ai-pm-tools/contents/skills --jq '.[].name')",
       "Bash(gh api repos/rraheja/ai-pm-tools/contents/.claude-plugin --jq '.[].name')",
       "Bash(gh api repos/rraheja/ai-pm-tools/contents/.claude-plugin/plugin.json | jq -r '.content' | base64 -d)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(export DATABASE_URL='postgresql://neondb_owner:npg_c75VhtgXUwqj@ep-young-mouse-amp40dtm-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require')",
+      "Bash(node scripts/migrate.js)",
+      "Bash(npm install:*)",
+      "Bash(lsof -ti:3001)",
+      "Bash(xargs kill:*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test2@example.com\"\",\"\"password\"\":\"\"test123\"\"}')",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -1,5 +1,6 @@
-import type { ReactNode, ReactElement } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { useAuthStore } from "../../stores/authStore";
 
 const navItems = [
   { to: "/generate", label: "生成", icon: "sparkles" },
@@ -8,7 +9,7 @@ const navItems = [
   { to: "/profile", label: "设置", icon: "settings" },
 ];
 
-const icons: Record<string, ReactElement> = {
+const icons: Record<string, React.ReactNode> = {
   sparkles: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3L14.5 8.5L20 11L14.5 13.5L12 19L9.5 13.5L4 11L9.5 8.5L12 3Z" />
@@ -34,11 +35,69 @@ const icons: Record<string, ReactElement> = {
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>
   ),
+  logout: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16,17 21,12 16,7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  ),
 };
 
-export default function AppShell({ children }: { children: ReactNode }) {
+// 用户菜单组件
+function UserMenu() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-paper-dark"
+      >
+        {/* 头像 */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-clay/20 text-clay text-sm font-medium">
+          {user.nickname?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+        </div>
+        <div className="hidden md:block flex-1 text-left">
+          <p className="text-sm font-ui text-ink truncate">{user.nickname || '用户'}</p>
+          <p className="text-[10px] text-dusk/60 truncate">{user.email}</p>
+        </div>
+      </button>
+
+      {/* 下拉菜单 */}
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute bottom-full left-0 right-0 mb-1 z-20 rounded-xl border border-line/60 bg-white shadow-lg overflow-hidden">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dusk hover:bg-paper-dark transition-colors"
+            >
+              {icons.logout}
+              <span>退出登录</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function AppShell() {
   const location = useLocation();
-  
+
   return (
     <div className="relative min-h-screen bg-paper text-ink antialiased">
       {/* 背景光效 */}
@@ -87,11 +146,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         
-        {/* 底部信息 */}
+        {/* 用户菜单 */}
         <div className="border-t border-line/60 p-3">
-          <div className="hidden md:block text-[10px] text-dusk/50 text-center">
-            v0.1.0
-          </div>
+          <UserMenu />
         </div>
       </aside>
       
@@ -128,7 +185,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       {/* 主内容区 - 适配左侧边栏 */}
       <main className="relative z-10 min-h-screen md:pl-56 pt-14 md:pt-0">
         <div className="mx-auto max-w-6xl px-3 py-3 md:px-6 md:py-6 lg:px-8 lg:py-8">
-          {children}
+          <Outlet />
         </div>
       </main>
     </div>
