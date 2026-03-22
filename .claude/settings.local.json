@@ -15,7 +15,8 @@
       "Bash(lsof -ti:3001)",
       "Bash(xargs kill:*)",
       "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"test2@example.com\"\",\"\"password\"\":\"\"test123\"\"}')",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(curl -v -X POST https://mind-write.vercel.app/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"test123@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"test123\"\"\"\",\"\"\"\"nickname\"\"\"\":\"\"\"\"TestUser\"\"\"\"}')"
     ]
   }
 }
