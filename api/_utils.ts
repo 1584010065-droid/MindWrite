@@ -66,7 +66,15 @@ export function getUserId(req: VercelRequest): string | null {
   }
 
   const token = authHeader.slice(7);
-  const { verifyAccessToken } = require('./_auth');
+  // 动态导入避免循环依赖
+  const { verifyAccessToken } = { verifyAccessToken: (t: string) => {
+    try {
+      const jwt = require('jsonwebtoken');
+      return jwt.verify(t, process.env.JWT_SECRET || '');
+    } catch {
+      return null;
+    }
+  } };
   const payload = verifyAccessToken(token);
 
   return payload?.userId ?? null;
