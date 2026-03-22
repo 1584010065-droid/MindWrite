@@ -3,70 +3,89 @@
  * POST /api/auth/login
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { queryOne } from '../_db';
-import { verifyPassword, signTokens } from '../_auth';
-import { handleOptions, success, error, parseBody } from '../_utils';
-
-interface LoginBody {
-  email: string;
-  password: string;
-}
+import { Pool } from '@neondatabase/serverless';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (handleOptions(req, res)) return;
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
-    return error(req, res, 'Method not allowed', 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { email, password } = await parseBody<LoginBody>(req);
+    // Parse body
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+    }
+    const { email, password } = JSON.parse(body || '{}');
 
-    // 验证输入
+    // Validate
     if (!email || !password) {
-      return error(req, res, '邮箱和密码不能为空');
+      return res.status(400).json({ error: '邮箱和密码不能为空' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    // Connect to DB
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: true,
+    });
 
-    // 查找用户
-    const user = await queryOne<{
-      id: string;
-      email: string;
-      nickname: string;
-      avatar_url: string | null;
-      password_hash: string;
-      writing_preference: string;
-      export_preset: string;
-      model_selection: string;
-      enable_web_search: boolean;
-      email_verified: boolean;
-    }>(
-      `SELECT id, email, nickname, avatar_url, password_hash,
+    // Find user
+    const result = await pool.query(
+      `SELECT id, email, nickname, password_hash, avatar_url,
               writing_preference, export_preset, model_selection,
               enable_web_search, email_verified
        FROM users WHERE email = $1`,
-      [normalizedEmail]
+      [email.toLowerCase().trim()]
     );
 
-    if (!user) {
-      return error(req, res, '邮箱或密码错误', 401);
+    if (result.rows.length === 0) {
+      await pool.end();
+      return res.status(401).json({ error: '邮箱或密码错误' });
     }
 
-    // 验证密码
+    const user = result.rows[0];
+
     if (!user.password_hash) {
-      return error(req, res, '请使用OAuth登录', 400);
+      await pool.end();
+      return res.status(400).json({ error: '请使用OAuth登录' });
     }
 
-    const isValid = await verifyPassword(password, user.password_hash);
+    // Verify password
+    const isValid = await bcrypt.compare(password, user.password_hash);
     if (!isValid) {
-      return error(req, res, '邮箱或密码错误', 401);
+      await pool.end();
+      return res.status(401).json({ error: '邮箱或密码错误' });
     }
 
-    // 生成 Token
-    const { accessToken, refreshToken } = await signTokens(user.id);
+    // Generate tokens
+    const accessToken = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '15m' }
+    );
+    const refreshToken = crypto.randomUUID();
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
-    success(req, res, {
+    await pool.query(
+      `INSERT INTO sessions (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+      [user.id, refreshTokenHash]
+    );
+
+    await pool.end();
+
+    res.status(200).json({
       user: {
         id: user.id,
         email: user.email,
@@ -81,8 +100,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       accessToken,
       refreshToken,
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    error(req, res, '服务器错误', 500);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: '服务器错误' });
   }
 }

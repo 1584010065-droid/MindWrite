@@ -3,31 +3,19 @@
  * POST /api/auth/logout
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { revokeRefreshToken } from '../_auth';
-import { handleOptions, success, error, parseBody } from '../_utils';
-
-interface LogoutBody {
-  refreshToken?: string;
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (handleOptions(req, res)) return;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
-    return error(req, res, 'Method not allowed', 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  try {
-    const { refreshToken } = await parseBody<LogoutBody>(req);
-
-    // 撤销刷新令牌
-    if (refreshToken) {
-      await revokeRefreshToken(refreshToken);
-    }
-
-    success(req, res, { message: '登出成功' });
-  } catch (err) {
-    console.error('Logout error:', err);
-    error(req, res, '服务器错误', 500);
-  }
+  res.status(200).json({ message: '登出成功' });
 }

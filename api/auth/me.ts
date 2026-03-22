@@ -3,44 +3,41 @@
  * GET /api/auth/me
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { queryOne } from '../_db';
-import { verifyAccessToken } from '../_auth';
-import { handleOptions, success, error, unauthorized } from '../_utils';
+import { Pool } from '@neondatabase/serverless';
+import jwt from 'jsonwebtoken';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (handleOptions(req, res)) return;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'GET') {
-    return error(req, res, 'Method not allowed', 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // 获取并验证 Token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      return unauthorized(req, res);
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const token = authHeader.slice(7);
-    const payload = verifyAccessToken(token);
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
 
     if (!payload) {
-      return unauthorized(req, res, '无效的访问令牌');
+      return res.status(401).json({ error: '无效的访问令牌' });
     }
 
-    // 获取用户信息
-    const user = await queryOne<{
-      id: string;
-      email: string;
-      nickname: string;
-      avatar_url: string | null;
-      writing_preference: string;
-      export_preset: string;
-      model_selection: string;
-      enable_web_search: boolean;
-      email_verified: boolean;
-      created_at: Date;
-    }>(
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: true,
+    });
+
+    const result = await pool.query(
       `SELECT id, email, nickname, avatar_url,
               writing_preference, export_preset, model_selection,
               enable_web_search, email_verified, created_at
@@ -48,11 +45,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [payload.userId]
     );
 
-    if (!user) {
-      return unauthorized(req, res, '用户不存在');
+    await pool.end();
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: '用户不存在' });
     }
 
-    success(req, res, {
+    const user = result.rows[0];
+
+    res.status(200).json({
       id: user.id,
       email: user.email,
       nickname: user.nickname,
@@ -64,8 +65,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       emailVerified: user.email_verified,
       createdAt: user.created_at,
     });
-  } catch (err) {
-    console.error('Get user error:', err);
-    error(req, res, '服务器错误', 500);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(401).json({ error: '无效的访问令牌' });
   }
 }
