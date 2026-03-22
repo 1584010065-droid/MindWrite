@@ -9,6 +9,7 @@ import GeneratePage from "./pages/GeneratePage";
 import WorkspacePage from "./pages/WorkspacePage";
 import ExportPage from "./pages/ExportPage";
 import ProfilePage from "./pages/ProfilePage";
+import ToastContainer from "./components/common/ToastContainer";
 import { useAuthStore } from "./stores/authStore";
 
 export default function App() {
@@ -31,29 +32,32 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      {/* 公开路由 */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+    <>
+      <Routes>
+        {/* 公开路由 */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
-      {/* 受保护路由 */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppShell />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/" element={<Navigate to="/generate" replace />} />
-        <Route path="/generate" element={<GeneratePage />} />
-        <Route path="/workspace" element={<WorkspacePage />} />
-        <Route path="/export" element={<ExportPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
+        {/* 受保护路由 */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/" element={<Navigate to="/generate" replace />} />
+          <Route path="/generate" element={<GeneratePage />} />
+          <Route path="/workspace" element={<WorkspacePage />} />
+          <Route path="/export" element={<ExportPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
 
-      {/* 404 重定向 */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* 404 重定向 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastContainer />
+    </>
   );
 }

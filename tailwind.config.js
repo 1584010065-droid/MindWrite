@@ -49,6 +49,7 @@ export default {
         rise: "rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         fadeIn: "fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "slide-up": "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       },
       keyframes: {
         floatIn: {
@@ -66,6 +67,10 @@ export default {
         pulse: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
+        },
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },
       transitionTimingFunction: {

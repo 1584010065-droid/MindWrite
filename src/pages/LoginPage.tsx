@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import type { OAuthProvider } from '../types/auth';
+import { toast } from '../stores/toastStore';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const login = useAuthStore((state) => state.login);
-  const loginWithOAuth = useAuthStore((state) => state.loginWithOAuth);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,14 +33,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleOAuth = (provider: OAuthProvider) => {
-    loginWithOAuth(provider);
+  const handleOAuth = () => {
+    toast.info('第三方登录功能开发中...');
   };
 
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-4">
       {/* 背景效果 */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-br from-clay/5 via-transparent to-moss/5" />
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-br from-clay/5 via-transparent to-sage/5" />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
@@ -113,7 +112,7 @@ export default function LoginPage() {
           {/* OAuth 按钮 */}
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => handleOAuth('github')}
+              onClick={() => handleOAuth()}
               className="flex items-center justify-center gap-2 rounded-xl border border-line/60 bg-paper/60 py-2.5 text-ink transition-all hover:bg-paper-dark hover:border-line"
               type="button"
             >
@@ -123,7 +122,7 @@ export default function LoginPage() {
               <span className="text-sm">GitHub</span>
             </button>
             <button
-              onClick={() => handleOAuth('google')}
+              onClick={() => handleOAuth()}
               className="flex items-center justify-center gap-2 rounded-xl border border-line/60 bg-paper/60 py-2.5 text-ink transition-all hover:bg-paper-dark hover:border-line"
               type="button"
             >
