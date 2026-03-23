@@ -16,7 +16,7 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     isSelected,
     isEditing,
     onSelect,
-    onEditStart,
+    onEditStart: _onEditStart,
     onEditCommit,
     onAddChild,
     onDelete,
