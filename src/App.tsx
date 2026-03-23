@@ -11,10 +11,14 @@ import ExportPage from "./pages/ExportPage";
 import ProfilePage from "./pages/ProfilePage";
 import ToastContainer from "./components/common/ToastContainer";
 import { useAuthStore } from "./stores/authStore";
+import { useDevAutoLogin } from "./hooks/useDevAutoLogin";
 
 export default function App() {
   const fetchUser = useAuthStore((state) => state.fetchUser);
   const isLoading = useAuthStore((state) => state.isLoading);
+
+  // 开发环境自动登录
+  useDevAutoLogin();
 
   useEffect(() => {
     fetchUser();

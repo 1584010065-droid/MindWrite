@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -80,10 +80,17 @@ export default function MindMapEditor() {
   const deleteNode = useMindMapStore((state) => state.deleteNode);
   const setHoveredNodeId = useMindMapStore((state) => state.setHoveredNodeId);
 
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const reactFlowInstance = useRef<any>(null);
 
   const layout = useMemo(() => buildLayout(map), [map]);
+
+  // 处理双击节点进入编辑模式
+  const handleNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setEditingNodeId(node.id);
+    },
+    [setEditingNodeId]
+  );
 
   const nodes: Node[] = useMemo(() => {
     return map.nodes.map((node) => {
@@ -93,14 +100,12 @@ export default function MindMapEditor() {
         id: node.id,
         position: { x: pos?.x ?? 0, y: pos?.y ?? 0 },
         type: "mindNode",
-        draggable: false,
+        draggable: false, // 暂时禁用拖拽，待实现完整逻辑
         data: {
           label: node.text,
           depth,
           isSelected: selectedNodeIds.includes(node.id),
           isEditing: editingNodeId === node.id,
-          isDropTarget: false,
-          isDragging: draggedNodeId === node.id,
           onSelect: (id: string, multi: boolean) => {
             if (multi) {
               toggleNodeSelection(id);
@@ -116,8 +121,6 @@ export default function MindMapEditor() {
           onAddChild: addChildNode,
           onDelete: deleteNode,
           onHover: setHoveredNodeId,
-          onDragStart: setDraggedNodeId,
-          onDragEnd: () => setDraggedNodeId(null),
         },
       };
     });
@@ -126,7 +129,6 @@ export default function MindMapEditor() {
     layout,
     selectedNodeIds,
     editingNodeId,
-    draggedNodeId,
     selectNode,
     toggleNodeSelection,
     setEditingNodeId,
@@ -175,7 +177,12 @@ export default function MindMapEditor() {
         fitView
         fitViewOptions={{ padding: 0.2 }}
         proOptions={{ hideAttribution: true }}
-        onPaneClick={() => selectNode(map.rootId)}
+        zoomOnDoubleClick={false}
+        onPaneClick={() => {
+          selectNode(map.rootId);
+          setEditingNodeId(null);
+        }}
+        onNodeDoubleClick={handleNodeDoubleClick}
         defaultEdgeOptions={{
           type: "default",
           style: { stroke: "rgba(43, 30, 22, 0.35)", strokeWidth: 2 },

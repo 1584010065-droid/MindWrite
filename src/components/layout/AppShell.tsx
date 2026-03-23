@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -42,17 +42,52 @@ const icons: Record<string, React.ReactNode> = {
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
+  chevronLeft: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15,18 9,12 15,6" />
+    </svg>
+  ),
+  chevronRight: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,18 15,12 9,6" />
+    </svg>
+  ),
 };
 
+// 展开/收起按钮组件
+function SidebarToggleButton({
+  isExpanded,
+  onToggle,
+}: {
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label={isExpanded ? "收起侧边栏" : "展开侧边栏"}
+      className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-line/60 bg-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-paper-dark hover:border-clay/30 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-clay/30 focus:ring-offset-2 focus:ring-offset-paper group"
+    >
+      <span
+        className={`transition-transform duration-250 ease-out-expo text-dusk group-hover:text-clay ${
+          isExpanded ? "" : "rotate-180"
+        }`}
+      >
+        {icons.chevronLeft}
+      </span>
+    </button>
+  );
+}
+
 // 用户菜单组件
-function UserMenu() {
+function UserMenu({ isExpanded }: { isExpanded: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   if (!user) return null;
@@ -61,16 +96,23 @@ function UserMenu() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-paper-dark"
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-paper-dark ${
+          isExpanded ? "" : "justify-center"
+        }`}
       >
         {/* 头像 */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-clay/20 text-clay text-sm font-medium">
-          {user.nickname?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-clay/20 text-sm font-medium text-clay">
+          {user.nickname?.charAt(0).toUpperCase() ||
+            user.email.charAt(0).toUpperCase()}
         </div>
-        <div className="hidden md:block flex-1 text-left">
-          <p className="text-sm font-ui text-ink truncate">{user.nickname || '用户'}</p>
-          <p className="text-[10px] text-dusk/60 truncate">{user.email}</p>
-        </div>
+        {isExpanded && (
+          <div className="flex-1 overflow-hidden text-left">
+            <p className="truncate text-sm font-ui text-ink">
+              {user.nickname || "用户"}
+            </p>
+            <p className="truncate text-[10px] text-dusk/60">{user.email}</p>
+          </div>
+        )}
       </button>
 
       {/* 下拉菜单 */}
@@ -80,10 +122,14 @@ function UserMenu() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute bottom-full left-0 right-0 mb-1 z-20 rounded-xl border border-line/60 bg-white shadow-lg overflow-hidden">
+          <div
+            className={`absolute bottom-full z-20 mb-1 overflow-hidden rounded-xl border border-line/60 bg-white shadow-lg ${
+              isExpanded ? "left-0 right-0" : "left-full ml-2 bottom-0 w-32"
+            }`}
+          >
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dusk hover:bg-paper-dark transition-colors"
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dusk transition-colors hover:bg-paper-dark"
             >
               {icons.logout}
               <span>退出登录</span>
@@ -98,34 +144,82 @@ function UserMenu() {
 export default function AppShell() {
   const location = useLocation();
 
+  // 侧边栏展开状态，默认展开（登录后）
+  const [isExpanded, setIsExpanded] = useState(() => {
+    // 从localStorage读取状态，如果没有则默认展开
+    const saved = localStorage.getItem("sidebar-expanded");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  // 持久化侧边栏状态
+  useEffect(() => {
+    localStorage.setItem("sidebar-expanded", String(isExpanded));
+  }, [isExpanded]);
+
+  // 切换侧边栏展开状态
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  // 侧边栏宽度类名
+  const sidebarWidthClass = isExpanded ? "w-56" : "w-16";
+  const mainPaddingClass = isExpanded ? "md:pl-56" : "md:pl-16";
+
   return (
     <div className="relative min-h-screen bg-paper text-ink antialiased">
       {/* 背景光效 */}
       <div className="pointer-events-none fixed inset-0 bg-warmglow" />
-      
+
       {/* 纸质纹理 */}
-      <div className="pointer-events-none fixed inset-0 opacity-25 bg-papergrain [background-size:20px_20px]" />
-      
+      <div className="pointer-events-none fixed inset-0 bg-papergrain opacity-25 [background-size:20px_20px]" />
+
       {/* 左侧边栏导航 */}
-      <aside className="fixed left-0 top-0 z-50 h-full w-16 md:w-56 border-r border-line/60 bg-paper/90 backdrop-blur-xl flex flex-col">
+      <aside
+        className={`fixed left-0 top-0 z-50 h-full border-r border-line/60 bg-paper/90 backdrop-blur-xl transition-all duration-300 ease-out-expo ${sidebarWidthClass}`}
+      >
+        {/* 展开/收起按钮 */}
+        <SidebarToggleButton
+          isExpanded={isExpanded}
+          onToggle={toggleSidebar}
+        />
+
         {/* Logo区域 */}
-        <div className="flex h-14 md:h-16 items-center gap-3 border-b border-line/60 px-3 md:px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-clay text-paper shadow-soft">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div
+          className={`flex h-14 items-center gap-3 border-b border-line/60 px-3 transition-all duration-300 ease-out-expo md:h-16 ${
+            isExpanded ? "md:px-4" : "md:justify-center md:px-2"
+          }`}
+        >
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-clay text-paper shadow-soft">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M12 19l7-7 3 3-7 7-3-3z" />
               <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
               <path d="M2 2l7.586 7.586" />
               <circle cx="11" cy="11" r="2" />
             </svg>
           </div>
-          <div className="hidden md:block">
-            <p className="font-display text-base text-ink leading-tight">MindWrite</p>
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-out-expo ${
+              isExpanded
+                ? "w-auto opacity-100"
+                : "w-0 opacity-0 md:hidden"
+            }`}
+          >
+            <p className="font-display text-base leading-tight text-ink">
+              MindWrite
+            </p>
             <p className="text-[10px] font-ui text-dusk/70">人文感写作</p>
           </div>
         </div>
-        
+
         {/* 导航链接 */}
-        <nav className="flex-1 py-3 px-2 space-y-1">
+        <nav className="flex-1 space-y-1 px-2 py-3">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -135,29 +229,48 @@ export default function AppShell() {
                   isActive
                     ? "bg-clay/10 text-clay"
                     : "text-dusk hover:bg-paper-dark hover:text-ink"
-                }`
+                } ${isExpanded ? "" : "justify-center"}`
               }
             >
-              <span className={`flex-shrink-0 ${location.pathname === item.to ? 'text-clay' : ''}`}>
+              <span
+                className={`flex-shrink-0 ${
+                  location.pathname === item.to ? "text-clay" : ""
+                }`}
+              >
                 {icons[item.icon]}
               </span>
-              <span className="hidden md:block text-sm font-ui">{item.label}</span>
+              <span
+                className={`overflow-hidden whitespace-nowrap text-sm font-ui transition-all duration-300 ease-out-expo ${
+                  isExpanded
+                    ? "w-auto opacity-100"
+                    : "w-0 opacity-0 md:hidden"
+                }`}
+              >
+                {item.label}
+              </span>
             </NavLink>
           ))}
         </nav>
-        
+
         {/* 用户菜单 */}
         <div className="border-t border-line/60 p-3">
-          <UserMenu />
+          <UserMenu isExpanded={isExpanded} />
         </div>
       </aside>
-      
+
       {/* 移动端顶部导航 */}
-      <div className="fixed top-0 left-0 right-0 z-40 border-b border-line/60 bg-paper/90 backdrop-blur-xl md:hidden">
+      <div className="fixed left-0 right-0 top-0 z-40 border-b border-line/60 bg-paper/90 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-clay text-paper">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M12 19l7-7 3 3-7 7-3-3z" />
                 <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
               </svg>
@@ -170,8 +283,8 @@ export default function AppShell() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `p-2 rounded-lg transition-all duration-250 ${
-                    isActive ? "text-clay bg-clay/10" : "text-dusk"
+                  `rounded-lg p-2 transition-all duration-250 ${
+                    isActive ? "bg-clay/10 text-clay" : "text-dusk"
                   }`
                 }
               >
@@ -181,9 +294,11 @@ export default function AppShell() {
           </div>
         </div>
       </div>
-      
+
       {/* 主内容区 - 适配左侧边栏 */}
-      <main className="relative z-10 min-h-screen md:pl-56 pt-14 md:pt-0">
+      <main
+        className={`relative z-10 min-h-screen pt-14 transition-all duration-300 ease-out-expo ${mainPaddingClass} md:pt-0`}
+      >
         <div className="mx-auto max-w-6xl px-3 py-3 md:px-6 md:py-6 lg:px-8 lg:py-8">
           <Outlet />
         </div>

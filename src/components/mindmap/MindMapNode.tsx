@@ -15,38 +15,28 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     depth = 0,
     isSelected,
     isEditing,
-    isDropTarget,
-    isDragging,
     onSelect,
     onEditStart,
     onEditCommit,
     onAddChild,
     onDelete,
     onHover,
-    onDragStart,
-    onDragEnd,
   } = data as {
     label: string;
     depth: number;
     isSelected: boolean;
     isEditing: boolean;
-    isDropTarget: boolean;
-    isDragging: boolean;
     onSelect: (id: string, multi: boolean) => void;
     onEditStart: (id: string) => void;
     onEditCommit: (id: string, text: string) => void;
     onAddChild: (id: string) => void;
     onDelete: (id: string) => void;
     onHover: (id: string | null) => void;
-    onDragStart: (id: string) => void;
-    onDragEnd: () => void;
   };
 
   const [value, setValue] = useState(label);
   const [showActions, setShowActions] = useState(false);
-  const [isDraggingNode, setIsDraggingNode] = useState(false);
-  const nodeRef = useRef<HTMLDivElement>(null);
-  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const colorScheme = depthColors[depth % depthColors.length];
 
@@ -54,33 +44,17 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
     setValue(label);
   }, [label]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isEditing) return;
-    if ((e.target as HTMLElement).tagName === "BUTTON") return;
-    if ((e.target as HTMLElement).tagName === "INPUT") return;
-
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    setIsDraggingNode(true);
-    onDragStart(id);
-
-    const handleMouseMove = () => {
-      if (!dragStartPos.current) return;
-    };
-
-    const handleMouseUp = () => {
-      setIsDraggingNode(false);
-      onDragEnd();
-      dragStartPos.current = null;
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
+  // 当进入编辑模式时自动聚焦输入框
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
+      e.preventDefault();
       onEditCommit(id, value);
     } else if (e.key === "Escape") {
       setValue(label);
@@ -90,7 +64,6 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
 
   return (
     <div
-      ref={nodeRef}
       className={`
         relative min-w-[200px] max-w-[320px] rounded-xl border-2 px-4 py-3
         shadow-soft transition-all duration-200 ease-out cursor-pointer
@@ -98,18 +71,10 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
           ? `${colorScheme.bg} ${colorScheme.border} shadow-glow ring-2 ring-offset-2 ring-offset-white/50 ${colorScheme.border.replace('border-', 'ring-')}`
           : `border-line/40 bg-white/90 hover:border-line-strong hover:shadow-lift`
         }
-        ${isDropTarget ? "ring-2 ring-clay ring-offset-2" : ""}
-        ${isDragging || isDraggingNode ? "opacity-60 scale-95" : ""}
       `}
       onClick={(event) => {
         event.stopPropagation();
-        if (!isDraggingNode) {
-          onSelect(id, event.shiftKey);
-        }
-      }}
-      onDoubleClick={(event) => {
-        event.stopPropagation();
-        onEditStart(id);
+        onSelect(id, event.shiftKey);
       }}
       onMouseEnter={() => {
         onHover(id);
@@ -119,7 +84,6 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
         onHover(null);
         setShowActions(false);
       }}
-      onMouseDown={handleMouseDown}
     >
       <Handle
         type="target"
@@ -144,6 +108,7 @@ const MindMapNode = memo(({ id, data }: NodeProps) => {
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <input
+              ref={inputRef}
               className="w-full bg-transparent text-sm font-ui text-ink focus:outline-none border-b-2 border-clay/60 focus:border-clay pb-1"
               value={value}
               onChange={(event) => setValue(event.target.value)}

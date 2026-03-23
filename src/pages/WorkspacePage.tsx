@@ -145,7 +145,7 @@ export default function WorkspacePage() {
           </button>
           
           <button
-            className="rounded-full border border-line/60 bg-paper/60 px-3 py-1.5 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5 hover:text-ink disabled:opacity-50"
+            className="rounded-full border border-line/60 bg-paper/60 px-4 py-1.5 text-xs font-ui text-dusk transition-all duration-250 ease-out-expo hover:border-clay/60 hover:bg-clay/5 hover:text-ink disabled:opacity-50"
             onClick={() => handleGenerate("selected")}
             disabled={loading || selectedCount === 0}
           >
@@ -154,11 +154,11 @@ export default function WorkspacePage() {
                 <path d="M12 3v18" />
                 <path d="M3 12h18" />
               </svg>
-              选中
+              生成段落
             </span>
           </button>
           <button
-            className="rounded-full bg-clay px-3 py-1.5 text-xs font-ui text-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-clay-light hover:shadow-lift disabled:opacity-60"
+            className="rounded-full bg-clay px-4 py-1.5 text-xs font-ui text-paper shadow-soft transition-all duration-250 ease-out-expo hover:bg-clay-light hover:shadow-lift disabled:opacity-60"
             onClick={() => handleGenerate("all")}
             disabled={loading}
           >
@@ -174,7 +174,7 @@ export default function WorkspacePage() {
                   <path d="M3 12h18" />
                 </svg>
               )}
-              {loading ? "生成中..." : "全文"}
+              {loading ? "生成中..." : "生成全文"}
             </span>
           </button>
         </div>

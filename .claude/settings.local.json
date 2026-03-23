@@ -18,7 +18,9 @@
       "Bash(npx tsc:*)",
       "Bash(curl -v -X POST https://mind-write.vercel.app/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"test123@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"test123\"\"\"\",\"\"\"\"nickname\"\"\"\":\"\"\"\"TestUser\"\"\"\"}')",
       "Bash(cd:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm list:*)",
+      "Bash(curl -s -X POST \"https://ark.cn-beijing.volces.com/api/v3/chat/completions\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer test-key\" -d '{\"\"\"\"model\"\"\"\": \"\"\"\"test\"\"\"\", \"\"\"\"messages\"\"\"\": [{\"\"\"\"role\"\"\"\": \"\"\"\"user\"\"\"\", \"\"\"\"content\"\"\"\": \"\"\"\"hi\"\"\"\"}]}')"
     ]
   }
 }
