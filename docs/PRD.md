@@ -1,9 +1,40 @@
 # PRD：思维导图 + AI 实时写作产品
 
-版本：v0.3（交付版草案）
-更新时间：2026-03-14（Asia/Shanghai）
+版本：v0.4
+更新时间：2026-03-23（Asia/Shanghai）
 
 ## 0. 术语与范围
+
+---
+
+## 0.1 开发进度追踪（v0.4）
+
+### 已完成的基础设施
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 用户认证系统 | ✅ 已完成 | 注册/登录/登出/Token刷新/JWT认证 |
+| Toast通知组件 | ✅ 已完成 | 全局消息提示，支持info/success/error/warning |
+| 开发环境自动登录 | ✅ 已完成 | 通过环境变量配置，仅DEV环境生效 |
+| 响应式布局框架 | ✅ 已完成 | AppShell组件，可收起侧边栏，移动端适配 |
+| 数据库连接 | ✅ 已完成 | Neon PostgreSQL，用户表/Session表 |
+
+### 进行中
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 思维导图编辑器 | 🚧 基础框架 | MindMapEditor/MindMapNode组件已搭建，待完善 |
+| 文章预览区 | 🚧 待开发 | - |
+
+### 待开发（MVP核心）
+
+- 节点参考资料功能
+- 节点-文段映射
+- 分段生成（AI）
+- 锁定机制
+- 导出功能
+
+---
 
 术语定义（用于统一交付口径）：
 
@@ -363,6 +394,13 @@ MVP 定价不强制上线，但 PRD 需要与工程实现对齐：
 
 ### MVP（第 1 阶段）
 
+**基础设施（已完成）：**
+- [x] 用户认证系统（注册/登录/登出/Token刷新）
+- [x] Toast通知组件
+- [x] 响应式布局框架（AppShell）
+- [x] 数据库连接与用户表
+
+**核心功能（进行中/待开发）：**
 - [ ] 思维导图编辑器（创建/编辑/拖拽/折叠/多选）
 - [ ] 节点参考资料（URL/粘贴原文 + grounded 开关 + 引用展示）
 - [ ] 节点-文段映射（高亮互跳 + 影响范围约束）
@@ -474,6 +512,60 @@ MVP 定价不强制上线，但 PRD 需要与工程实现对齐：
 验收用例（最小集合）：
 
 1. 选中节点 A 生成段落，节点 B 的段落不变。
-2. 锁定段落后执行“生成全文”，锁定段落字符串完全一致。
-3. 对某段执行“扩展”，只影响该段，邻段不变且衔接自然。
+2. 锁定段落后执行”生成全文”，锁定段落字符串完全一致。
+3. 对某段执行”扩展”，只影响该段，邻段不变且衔接自然。
 4. 开启 grounded：输出包含引用来源；关闭 grounded：不包含引用来源。
+
+---
+
+## 18. 用户认证系统（基础设施）
+
+### 18.1 功能范围
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 邮箱注册 | ✅ | 支持邮箱+密码注册，密码bcrypt加密 |
+| 邮箱登录 | ✅ | JWT认证，Access Token 15分钟有效 |
+| Token刷新 | ✅ | Refresh Token 7天有效，存于sessions表 |
+| 登出 | ✅ | 清除服务端Session |
+| 用户信息获取 | ✅ | /api/auth/me 端点 |
+| 开发环境自动登录 | ✅ | 通过VITE_DEV_LOGIN_EMAIL/PASSWORD环境变量 |
+
+### 18.2 数据库表结构
+
+**users 表：**
+- id (UUID, PK)
+- email (string, unique)
+- password_hash (string, nullable - OAuth用户无密码)
+- nickname (string)
+- avatar_url (string)
+- writing_preference (jsonb)
+- export_preset (jsonb)
+- model_selection (string)
+- enable_web_search (boolean)
+- email_verified (boolean)
+- created_at, updated_at
+
+**sessions 表：**
+- id (UUID, PK)
+- user_id (UUID, FK)
+- token_hash (string)
+- expires_at (timestamp)
+
+### 18.3 API端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| /api/auth/register | POST | 用户注册 |
+| /api/auth/login | POST | 用户登录 |
+| /api/auth/logout | POST | 用户登出 |
+| /api/auth/me | GET | 获取当前用户信息 |
+| /api/auth/refresh | POST | 刷新Access Token |
+
+### 18.4 安全要求
+
+- 密码使用bcrypt加密存储
+- Access Token有效期15分钟
+- Refresh Token有效期7天，存储hash值
+- 登出时清除服务端Session记录
+- 开发环境自动登录功能仅在DEV环境生效
